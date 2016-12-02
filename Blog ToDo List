@@ -1,0 +1,592 @@
+Planning an application
+	1. Answer Questions
+		- What are we building?
+			- Website with blog posts, contact page, about page, seminar page, counceling page and weddings page. Admin can upload, edit, and destroy their own blog_posts. 
+
+		- Who are we building it for?
+			- Dad and all his fans! 
+
+		- What features do we need it to have?
+			- Users (Devise)
+				- Sign up
+				- email confirmation
+				- Sign in/out
+				- Sendgrid
+			- Blog Posts
+				- Create / Edit / Destroy
+				- upload media (photos, video)
+			- Comments (Disqus)
+				- can use disqus or not.
+			- Mailing List
+				- a place where visitors can sign up and receive blog posts.
+
+		- Why do we need it?
+			- Dad seriously needs a new website and I could use the practice.
+
+	2. User Stories
+
+		1. As an admin, I want to sign up, sign in/out, and be redirected to my admin page after signing up/in so that I can manage blog_posts.
+
+			- install devise and follow prompts
+			- add :confirmable in model
+			- uncomment out confirmable table before running migration. 
+
+			- install figaro and follow prompts
+
+			- add sendgrid username and password to locals/application.yml
+
+			- Set up Heroku ( https://devcenter.heroku.com/articles/git_ )
+	
+				heroku auth:logout
+				heroku create
+				enter in heroku email and password
+	
+			- Heroku and sendgrid
+				heroku addons:create sendgrid:starter
+				heroku config:get SENDGRID_USERNAME
+				heroku config:get SENDGRID_PASSWORD
+
+			- create initializer.setup_mail.rb and add 
+
+			if Rails.env.development? || Rails.env.production?
+    			ActionMailer::Base.delivery_method = :smtp
+    			ActionMailer::Base.smtp_settings = {
+     			address:        'smtp.sendgrid.net',
+      			port:           '2525',
+      			authentication: :plain,
+      			user_name:      ENV['SENDGRID_USERNAME'],
+      			password:       ENV['SENDGRID_PASSWORD'],
+      			domain:         'heroku.com',
+      			enable_starttls_auto: true
+    			}
+  			end
+
+  			- generate users controller with the show action
+
+  				rails g controller users show
+
+  			- populate the show action
+
+  				def show
+  					@user = User.find(parms[:id])
+  				end
+
+  			- add after_sign_in_path_for to application/Controller
+
+  				def after_sign_in_path_for(resource)
+  					user_path(current_user)
+  				end
+
+  			- fill out views/layouts/application.html.erb
+
+					<!DOCTYPE html>
+					<html>
+					<head>
+					<title>Recipe_app</title>
+					<%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+					<%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+					<%= csrf_meta_tags %>
+					</head>
+					<body>
+
+					<div class="container">
+					<% if user_signed_in? %>
+					Signed in as: <strong><%= current_user.email %></strong> |
+					<%= link_to 'Edit profile', edit_user_registration_path, :class => 'navbar-link' %> - 
+					<%= link_to "Sign Out", destroy_user_session_path, method: :delete, :class => 'navbar-link'  %>
+					<% else %>
+					<%= link_to "Sign Up", new_user_registration_path, :class => 'navbar-link' %> -
+					<%= link_to "Sign In", new_user_session_path, :class => 'navbar-link' %>
+					<% end %>
+
+					<div class="flash">
+					<% if flash[:notice] %>
+					<div class="alert alert-success">
+					<button type="button" class="close" data-dismiss="alert">&times;</button>
+					<%= flash[:notice] %>
+					</div>
+					<% elsif flash.now[:alert] %>
+					<div class="alert alert-danger">
+					<button type="button" class="close" data-dismiss="alert">&times;</button>
+					<%= flash.now[:alert] %>
+					</div>
+					<% elsif flash[:alert] %>
+					<div class="alert alert-warning">
+					<button type="button" class="close" data-dismiss="alert">&times;</button>
+					<%= flash[:alert] %>
+					</div>
+					<% end %>
+					</div>
+
+					<%= yield %>
+					</div>
+
+					</body>
+					</html>
+
+			- fill out user model
+				- has_many :posts
+		 		- has_many :comments
+
+		 		- def first_name and last_name
+		 			  def name
+  						"#{first_name} #{last_name}"
+  					  end
+
+  				add first_name and last_name to database, run migration
+  					- rails g migration add_name_to_users
+  					go into migration and add 
+  					def change
+  						add_column :users, :first_name, :string
+  						add_column :users, :last_name, :string
+  					end
+
+  					then run rake db:migrate
+
+  				- for devise you must add protected parameters to application controller
+
+  				  	protected
+  
+ 					def configure_permitted_parameters
+     					devise_parameter_sanitizer.permit(:sign_up, keys: [:first_name, :last_name])
+    					devise_parameter_sanitizer.permit(:account_update, keys: [:first_name, :last_name])
+  					end
+
+  				- add to devise/registrations/new.html.erb
+  				    <%= f.input :first_name, required: true %>
+    				<%= f.input :last_name, required: true %>
+
+    			- add to devise/registrations/edit.html.erb
+    			    <%= f.input :first_name %>
+    				<%= f.input :last_name %>
+
+    			- change confirmation email at config/initializers/devise
+
+
+		2. As an admin, I want to create, edit, update and destroy my own blog_posts so that I can manage and keep them updated.
+
+		 	- Create Post Model
+		 		- user_id:integer
+		 		- title:string
+		 		- body:text		 	
+		 		- belongs_to :user
+		 		- has_many :comments
+		 		- photo - image magick and paperclip
+		 		- video - paperclip?		 	
+
+		 	rails g model Post title:string body:text user_id:integer
+
+		 	rake db:migrate
+
+		 	- Controller actions
+		 		- before_action :find_post
+		 		- new
+		 		- create
+		 		- index (show all by descending order)
+		 		- show
+		 		- edit
+		 		- update
+		 		- destroy 
+		 		- private
+		 			- post_params
+		 			- find_post
+
+		 	- View Pages
+		 		- new
+		 		- index
+		 		- show
+		 		- edit
+		 		- destroy		
+
+		3. As an admin, I want to upload blog_post title, body text, photo, and video, so that my followers can read my blog.
+
+		4. As an admin, I want my blog_posts to be sent out to mailing list as well as social media like Facebook, and twitter.
+
+		5. As admin or visitor, I want to be able to find blog_posts by tags or topics, so that I can easily search through the blog_posts.  
+
+		6. As a user, I want to be able to post a modified version of all recipes (possibly as a link) on the original recipe#show page so that all users can see the modification.
+
+		7. As a visitor, I want to be able to comment on blog_posts, contact the admin, and sign up on the mailing list. 
+
+	3.  Modeling Data
+		- Home page - recent blog posts
+		- Contact page
+		- About
+		- Weddings
+		- Seminars
+		- Counseling 
+
+		 - BlogPosts
+
+		 	- Model
+		 		- user_id:integer (only 1)
+		 		- title:string
+		 		- body:text		 	
+		 		- belongs_to :user 
+		 		- has_many :comments
+		 		- photo - image magick and paperclip - follow recipe_app
+		 		- video - paperclip? - follow recipe_app
+
+		 	- Controller actions
+		 		- before_action :find_posts
+		 		- new
+		 		- create
+		 		- index (show all by descending order)
+		 		- show
+		 		- edit
+		 		- update
+		 		- destroy 
+		 		- private
+		 			- post_params
+		 			- find_posts
+
+		 	- View Pages
+		 		- new
+		 		- index
+		 		- show
+		 		- edit
+		 		- destroy
+
+		 - Comments (disqus) - follow recipe_app
+
+		 	- Model
+		 		- description:text		 	
+		 		- user_id:integer
+		 		- recipe_id:integer
+				- belongs_to :posts
+				- belongs_to :user
+
+			- Controller actions
+				- before_action :authorize_current_user
+				- create
+				- edit
+				- destroy
+				- private
+					comments_params
+					authorize__current_user
+
+			- Views Pages
+				- create
+				- edit
+				- destroy
+
+		Users - devise
+
+	4. 	Page Flow
+
+
+
+
+
+		2. As a user I want to see my profile page, so that I can manage my recipes and see new recipes from other users.
+
+			- update layout/application.html.erb 
+
+				- navbar
+
+					- logo and search bar on left
+
+					- nav and gravatar on right
+
+						 - for gravatar add code to user.rb
+						 	   def avatar_url(size)
+     								gravatar_id = Digest::MD5::hexdigest(self.email).downcase
+     								"http://gravatar.com/avatar/#{gravatar_id}.png?s=#{size}"
+   							   end
+
+   						 and style to users.scss
+   							    .gravatar {
+   									margin-bottom: 5px;
+  					 				margin-right: 5px;
+ 								}
+
+						- link to recipe#index (all recipes in database)
+
+						- link to current_user recipes
+
+						- link to recipe#new (simple_form_for recipe)
+
+						- logout
+
+
+				- user#show page (profile page)
+
+					- current_user recipes
+
+						- 3 columns photos and title of recipe
+
+					
+
+		
+		5. As a visitor, I want to be able to comment on blog_posts
+
+			- add disqus https://disqus.com/
+			follow directions on website.
+
+			- create _disqus.html.erb partial inside recipes views. add code from https://recipe-app.disqus.com/admin/install/platforms/universalcode/:
+
+			<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = '//recipe-app.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+- note: come back to this page to update configurations. also update heroku
+                                
+		
+		6. As a user, I want to be able to bookmark recipe, so that I can come back to them as needed.
+
+			- bookmark model to keep track of recipes user has bookmarked
+			- add button so users can bookmark recipe and add to bookmark#show page 
+
+			- create bookmark model
+				belongs_to: user
+				belongs_to :recipe
+
+			- associate recipe and user models with bookmarks
+			- recipe model
+				- has_many :bookmarks
+
+			- user model
+				- has_many: bookmarks
+
+			- create bookmark controller
+				show
+				new
+				create
+				edit
+				update
+				destroy
+
+			- bookmark views
+				_bookmark.hmtl.erb
+				show - link to _bookmark
+				add _bookmark.html.erb to user show page
+
+			- routes
+
+
+
+		7. As a user, I want to be able to find recipes by tags, so that I can easily search through the recipes.  
+
+
+		
+		8. As a user, I want to be able to rate other user recipes so other users know if they are good or not.
+
+			- reference Mackenzie Child's Movie Review video. 
+
+			- 5 star rating system. will need images: full star, half star, empty star. 
+			- partial with code. will need to link it to recipe show page.
+
+			add rating to recipe model rails g migration add_rating_to_recipes rating:integer
+
+			- add jQuery raty. import the 2.7.1 files.
+
+			- add star images to assets/images
+			- import code from jquery raty.js 2.7.1 app/assets/javascripts/jqery.raty.js code
+			- import code from jquery raty.js 2.7.1 app/assets/stylesheets/jquery.raty.scss 
+
+			Ratings_controller - scaffold. 
+
+
+		
+		
+		9. As a user, I want to be able to post a modified version of all recipes (possibly as a link) on the original recipe#show page so that all users can see the modification.
+
+			- somehow have to make a copy of the original recipe and link only the edit page. This will be posted to recipe show page as a link.
+
+			- add url:string to recipe model. this place
+	  
+
+	
+	3. Modeling the Data
+		 - BlogPosts
+
+		 	- Model
+		 		- user_id:integer (only 1)
+		 		- title:string
+
+		 		- body:text		 	
+		 		- belongs_to :user 
+		 		- has_many :comments
+		 		- photo - image magick and paperclip - follow recipe_app
+		 		- video - paperclip? - follow recipe_app
+
+		 	- Controller actions
+		 		- before_action :set_recipe
+		 		- new
+		 		- create
+		 		- index (show all by descending order)
+		 		- show
+		 		- edit
+		 		- update
+		 		- destroy 
+		 		- private
+		 			- recipe_params
+		 			- set_recipe
+
+		 	- View Pages
+		 		- new
+		 		- index
+		 		- show
+		 		- edit
+		 		- destroy
+
+		 - Comments (disqus)
+
+		 	- Model
+		 		- description:text		 	
+		 		- user_id:integer
+		 		- recipe_id:integer
+				- belongs_to :recipe
+				- belongs_to :user
+
+			- Controller actions
+				- before_action :authorize_current_user
+				- create
+				- edit
+				- destroy
+				- private
+					comments_params
+					authorize__current_user
+
+			- Views Pages
+				- create
+				- edit
+				- destroy
+
+		 - Users 
+		 	- (devise)
+
+		 	- Model
+		 		- username:string
+		 		- email:string
+
+		 		- has_many :recipes
+		 		- has_many :ratings
+		 		- has_many :bookmarks
+		 		- def first_name and last_name
+
+		 	- Controller
+		 		- show
+
+		 	- Views 
+		 		- devise
+		 		- show
+
+		 
+
+
+	4. Page flow.
+
+		 - Welcome#home
+		 	- users sign up/in. Once signed in we are directed to users#show page
+
+		 - User#show
+		 	- user information, gravatar, bio
+		 	- Either a form or link to create new recipe
+		 	- index of user's recipes that can be edited or destroyed.
+		 	- link to bookmarked recipes
+		 	- link to all recipes in database sorted by newest first.
+
+		 - Recipe#new
+		 	- form for creating new recipe
+		 	- includes title, description, ingredients, directions, photo and video capibilities.
+
+		 	https://github.com/plataformatec/simple_form
+
+		 	example code:
+		 	<%= simple_form_for @user do |f| %>
+  				<%= f.input :username %>
+  				<%= f.input :password %>
+  				<%= f.button :submit %>
+			<% end %>
+
+		 - Recipe#edit
+		 	- recipe form, ingredients form, directions form
+
+		 - Recipe#destroy
+
+		 - Recipe#index
+		 	- index of all recipes sorted by (categories or date).
+
+		 - bookmark#index
+		 	- list of all bookmarked recipes by category.
+
+		 - Comments
+
+	5. Gems to install
+		 - bootstrap-sass for styling
+		 - devise for users
+		 - figaro for sendgrid	
+		 - simple_form for forms
+		 - paperclip and image magick for media	
+		 - disqus for comments
+		 - cocoon for nested forms (ingredients, directions)
+		 - faker for seeding fake data
+		 - activeadmin
+
+
+codewars
+def calculator(distance, bus_drive, bus_walk)
+  #your code here, use the preset $walk and $bus values
+  walk_time = distance / $walk
+  bus_time = (bus_drive / $bus) + (bus_walk / $walk)
+end
+
+
+
+text_field: video
+videoembededurl
+
+@recipe.video_embed_url.html_safe
+
+
+
+blow the database and start over?
+
+home page should have picture, not just sign in
+have search box in nav bar work. 
+show link to modified version of original recipe on recipe show page
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
