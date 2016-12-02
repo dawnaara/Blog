@@ -13,6 +13,9 @@ gem 'figaro', '~> 1.1', '>= 1.1.1'
 gem 'devise', '~> 4.2'
 gem 'activeadmin', github: 'activeadmin'#rails 5 requires this
 gem 'inherited_resources', github: 'activeadmin/inherited_resources'#rails 5 requires this
+#theme for active admin
+gem 'active_skin'
+
 
 #The git source `git://github.com/activeadmin/activeadmin.git` uses the `git` protocol, which transmits data without encryption. Disable this warning with `bundle config git.allow_insecure true`, or switch to the `https` protocol to keep your data secure.
 
