@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
   
+  get 'home/index'
+
   devise_for :admin_users, ActiveAdmin::Devise.config
   ActiveAdmin.routes(self)
 
@@ -9,5 +11,5 @@ Rails.application.routes.draw do
   devise_for :users
   resources :posts
 
-  root 'posts#index'
+  root 'home#index'
 end
