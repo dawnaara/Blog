@@ -1,5 +1,11 @@
 Rails.application.routes.draw do
   
+  get 'contact/show'
+
+  get 'contact/index'
+
+  get 'about/index'
+
   get 'home/index'
 
   devise_for :admin_users, ActiveAdmin::Devise.config
