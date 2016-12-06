@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   get '/weddings', to: 'home#weddings'
   get '/counceling', to: 'home#counceling'
   get '/book', to: 'home#book'
-  get 'about/index' # change to: get '/about', to: 'home#about'
+  get '/about', to: 'home#about'
 
   devise_for :admin_users, ActiveAdmin::Devise.config
   ActiveAdmin.routes(self)
@@ -16,6 +16,7 @@ Rails.application.routes.draw do
 
   devise_for :users
   resources :posts
+  resources :contacts, only: [:new, :create]
 
   root 'home#index'
 end
