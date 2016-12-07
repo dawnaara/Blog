@@ -5,12 +5,13 @@ require 'rails/all'
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
+Bundler.require *Rails.groups(:assets)
 
 module Blog
   class Application < Rails::Application
     
     # config/application.rb - NOT production.rb
-    config.assets.initialize_on_precompile = false
+    # config.assets.initialize_on_precompile = false
 
     # Precompile additional assets. Defaults to [application.js, application.css, non-JS/CSS]
     config.assets.precompile += ['active_admin.css', 'active_admin/print.css', 'active_admin.js']
